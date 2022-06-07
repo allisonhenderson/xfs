@@ -101,5 +101,6 @@ uint xfs_allocfree_block_count(struct xfs_mount *mp, uint num_ops);
 unsigned int xfs_calc_itruncate_reservation_minlogsize(struct xfs_mount *mp);
 unsigned int xfs_calc_write_reservation_minlogsize(struct xfs_mount *mp);
 unsigned int xfs_calc_qm_dqalloc_reservation_minlogsize(struct xfs_mount *mp);
+void xfs_calc_parent_ptr_reservations(struct xfs_mount *mp);
 
 #endif	/* __XFS_TRANS_RESV_H__ */
