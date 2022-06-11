@@ -625,7 +625,9 @@ xfs_attri_item_recover(
 		args->value = nv->value.i_addr;
 		args->valuelen = nv->value.i_len;
 		args->total = xfs_attr_calc_size(args, &local);
-		if (xfs_inode_hasattr(args->dp))
+		if (!args->dp->i_afp)
+			attr->xattri_dela_state = XFS_DAS_CREATE_FORK;
+		else if (xfs_inode_hasattr(args->dp))
 			attr->xattri_dela_state = xfs_attr_init_replace_state(args);
 		else
 			attr->xattri_dela_state = xfs_attr_init_add_state(args);

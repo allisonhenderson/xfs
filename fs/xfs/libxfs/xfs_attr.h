@@ -445,7 +445,7 @@ struct xfs_attr_list_context {
  */
 enum xfs_delattr_state {
 	XFS_DAS_UNINIT		= 0,	/* No state has been set yet */
-
+	XFS_DAS_CREATE_FORK,		/* Create the attr fork */
 	/*
 	 * Initial sequence states. The replace setup code relies on the
 	 * ADD and REMOVE states for a specific format to be sequential so

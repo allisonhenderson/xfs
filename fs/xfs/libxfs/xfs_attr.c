@@ -719,15 +719,31 @@ xfs_attr_set_iter(
 	struct xfs_attr_intent		*attr)
 {
 	struct xfs_da_args              *args = attr->xattri_da_args;
+	int				sf_size;
 	int				error = 0;
 
 	/* State machine switch */
+
 next_state:
 	switch (attr->xattri_dela_state) {
 	case XFS_DAS_UNINIT:
 		ASSERT(0);
 		return -EFSCORRUPTED;
+	case XFS_DAS_CREATE_FORK:
+		sf_size = sizeof(struct xfs_attr_sf_hdr) +
+			  xfs_attr_sf_entsize_byname(args->namelen,
+						     args->valuelen);
+		error = xfs_bmap_set_attrforkoff(args->dp, sf_size, NULL);
+		if (error)
+			return error;
+		args->dp->i_afp = kmem_cache_zalloc(xfs_ifork_cache, 0);
+		args->dp->i_afp->if_format = XFS_DINODE_FMT_EXTENTS;
+		fallthrough;
 	case XFS_DAS_SF_ADD:
+		if (!args->dp->i_afp) {
+			attr->xattri_dela_state = XFS_DAS_CREATE_FORK;
+			goto next_state;
+		}
 		return xfs_attr_sf_addname(attr);
 	case XFS_DAS_LEAF_ADD:
 		return xfs_attr_leaf_addname(attr);
@@ -920,8 +936,10 @@ xfs_attr_defer_add(
 	error = xfs_attr_intent_init(args, XFS_ATTRI_OP_FLAGS_SET, &new);
 	if (error)
 		return error;
-
-	new->xattri_dela_state = xfs_attr_init_add_state(args);
+	if (!args->dp->i_afp)
+		new->xattri_dela_state = XFS_DAS_CREATE_FORK;
+	else
+		new->xattri_dela_state = xfs_attr_init_add_state(args);
 	xfs_defer_add(args->trans, XFS_DEFER_OPS_TYPE_ATTR, &new->xattri_list);
 	trace_xfs_attr_defer_add(new->xattri_dela_state, args->dp);
 
