@@ -39,6 +39,23 @@ xfs_attr_shortform_compare(const void *a, const void *b)
 	}
 }
 
+/*
+ * Returns true or false if the parent attribute should be listed
+ */
+static bool
+xfs_attr_filter_parent(
+	struct xfs_attr_list_context	*context,
+	int				flags)
+{
+	if (!(flags & XFS_ATTR_PARENT))
+		return true;
+
+	if (context->attr_filter & XFS_ATTR_PARENT)
+		return true;
+
+	return false;
+}
+
 #define XFS_ISRESET_CURSOR(cursor) \
 	(!((cursor)->initted) && !((cursor)->hashval) && \
 	 !((cursor)->blkno) && !((cursor)->offset))
@@ -90,11 +107,12 @@ xfs_attr_shortform_list(
 							       sfe->namelen,
 							       sfe->flags)))
 				return -EFSCORRUPTED;
-			context->put_listent(context,
-					     sfe->flags,
-					     sfe->nameval,
-					     (int)sfe->namelen,
-					     (int)sfe->valuelen);
+			if (xfs_attr_filter_parent(context, sfe->flags))
+				context->put_listent(context,
+						     sfe->flags,
+						     sfe->nameval,
+						     (int)sfe->namelen,
+						     (int)sfe->valuelen);
 			/*
 			 * Either search callback finished early or
 			 * didn't fit it all in the buffer after all.
@@ -185,11 +203,12 @@ xfs_attr_shortform_list(
 			error = -EFSCORRUPTED;
 			goto out;
 		}
-		context->put_listent(context,
-				     sbp->flags,
-				     sbp->name,
-				     sbp->namelen,
-				     sbp->valuelen);
+		if (xfs_attr_filter_parent(context, sbp->flags))
+			context->put_listent(context,
+					     sbp->flags,
+					     sbp->name,
+					     sbp->namelen,
+					     sbp->valuelen);
 		if (context->seen_enough)
 			break;
 		cursor->offset++;
@@ -474,8 +493,10 @@ xfs_attr3_leaf_list_int(
 				   !xfs_attr_namecheck(mp, name, namelen,
 						       entry->flags)))
 			return -EFSCORRUPTED;
-		context->put_listent(context, entry->flags,
+		if (xfs_attr_filter_parent(context, entry->flags))
+			context->put_listent(context, entry->flags,
 					      name, namelen, valuelen);
+
 		if (context->seen_enough)
 			break;
 		cursor->offset++;
@@ -538,6 +559,10 @@ xfs_attr_list(
 
 	if (xfs_is_shutdown(dp->i_mount))
 		return -EIO;
+
+	if (context->attr_filter == 0)
+		context->attr_filter =
+			XFS_ATTR_ALL & ~XFS_ATTR_PARENT;
 
 	lock_mode = xfs_ilock_attr_map_shared(dp);
 	error = xfs_attr_list_ilocked(context);

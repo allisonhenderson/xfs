@@ -697,6 +697,9 @@ struct xfs_attr3_leafblock {
 #define XFS_ATTR_INCOMPLETE	(1u << XFS_ATTR_INCOMPLETE_BIT)
 #define XFS_ATTR_NSP_ONDISK_MASK \
 			(XFS_ATTR_ROOT | XFS_ATTR_SECURE | XFS_ATTR_PARENT)
+#define XFS_ATTR_ALL \
+	(XFS_ATTR_LOCAL_BIT | XFS_ATTR_ROOT | XFS_ATTR_SECURE | \
+	 XFS_ATTR_PARENT | XFS_ATTR_INCOMPLETE_BIT)
 
 /*
  * Alignment for namelist and valuelist entries (since they are mixed
