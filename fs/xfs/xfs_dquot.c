@@ -1333,6 +1333,31 @@ xfs_dqlock2(
 	}
 }
 
+void
+xfs_dqlockn(
+	struct xfs_dqtrx	*q)
+{
+	struct xfs_dquot	*d;
+	unsigned int		i, j;
+
+	for (i = 0; i < XFS_QM_TRANS_MAXDQS; i++) {
+		d = q[i].qt_dquot;
+
+		if (d == NULL)
+			break;
+
+		for (j = 0; j < i; j++) {
+			ASSERT(d != q[j].qt_dquot);
+			ASSERT(q[j].qt_dquot->q_id > d->q_id);
+		}
+
+		if (i == 0)
+			mutex_lock(&d->q_qlock);
+		else
+			mutex_lock_nested(&d->q_qlock, XFS_QLOCK_NESTED);
+	}
+}
+
 int __init
 xfs_qm_init(void)
 {
